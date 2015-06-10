@@ -26,6 +26,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -646,6 +647,24 @@ public class XStream {
         types.addAll(Arrays.<Class<?>>asList(BitSet.class, Charset.class, Class.class, Currency.class, Date.class,
             DecimalFormatSymbols.class, File.class, Locale.class, Object.class, Pattern.class, StackTraceElement.class,
             String.class, StringBuffer.class, StringBuilder.class, URL.class, URI.class, UUID.class));
+
+        if(JVM.is18()){
+            types.add(JVM.loadClassForName("java.time.Instant"));
+            types.add(JVM.loadClassForName("java.time.LocalTime"));
+            types.add(JVM.loadClassForName("java.time.LocalDateTime"));
+            types.add(JVM.loadClassForName("java.time.LocalDate"));
+            types.add(JVM.loadClassForName("java.time.chrono.HijrahDate"));
+            types.add(JVM.loadClassForName("java.time.chrono.JapaneseDate"));
+            types.add(JVM.loadClassForName("java.time.chrono.MinguoDate"));
+            types.add(JVM.loadClassForName("java.time.chrono.ThaiBuddhistDate"));
+            types.add(JVM.loadClassForName("java.time.OffsetDateTime"));
+            types.add(JVM.loadClassForName("java.time.OffsetTime"));
+            types.add(JVM.loadClassForName("java.time.Year"));
+            types.add(JVM.loadClassForName("java.time.YearMonth"));
+            types.add(JVM.loadClassForName("java.time.ZonedDateTime"));
+            types.add(JVM.loadClassForName("java.time.Duration"));
+            types.add(JVM.loadClassForName("java.time.Period"));
+        }
         if (JVM.isSQLAvailable()) {
             types.add(JVM.loadClassForName("java.sql.Timestamp"));
             types.add(JVM.loadClassForName("java.sql.Time"));
@@ -742,6 +761,28 @@ public class XStream {
         }
         if (JVM.loadClassForName("java.lang.invoke.SerializedLambda") != null) {
             aliasDynamically("serialized-lambda", "java.lang.invoke.SerializedLambda");
+        }
+
+        if(JVM.is18()) {
+            alias("instant",            JVM.loadClassForName("java.time.Instant"));
+            alias("local-time",         JVM.loadClassForName("java.time.LocalTime"));
+            alias("local-date-time",    JVM.loadClassForName("java.time.LocalDateTime"));
+            alias("local-date",         JVM.loadClassForName("java.time.LocalDate"));
+
+            alias("hijrah-date",        JVM.loadClassForName("java.time.chrono.HijrahDate"));
+            alias("japanese-date",      JVM.loadClassForName("java.time.chrono.JapaneseDate"));
+            alias("minguo-date",        JVM.loadClassForName("java.time.chrono.MinguoDate"));
+            alias("thai-date",          JVM.loadClassForName("java.time.chrono.ThaiBuddhistDate"));
+
+            alias("offset-date-time",   JVM.loadClassForName("java.time.OffsetDateTime"));
+            alias("offset-time",        JVM.loadClassForName("java.time.OffsetTime"));
+            alias("year",               JVM.loadClassForName("java.time.Year"));
+            alias("year-month",         JVM.loadClassForName("java.time.YearMonth"));
+            alias("zoned-date-time",    JVM.loadClassForName("java.time.ZonedDateTime"));
+
+            //prefix 'jt' prepended to disambiguate from "javax.xml.datatype.Duration"
+            alias("jtduration",         JVM.loadClassForName("java.time.Duration"));
+            alias("period",             JVM.loadClassForName("java.time.Period"));
         }
     }
 
@@ -842,6 +883,15 @@ public class XStream {
             registerConverterDynamically("com.thoughtworks.xstream.converters.reflection.LambdaConverter",
                 PRIORITY_NORMAL, new Class[]{Mapper.class, ReflectionProvider.class, ClassLoaderReference.class},
                 new Object[]{mapper, reflectionProvider, classLoaderReference});
+
+
+            Class<?> javaTime;
+            if ((javaTime = JVM.loadClassForName("com.thoughtworks.xstream.converters.extended.JavaTimeConverters")) != null) try {
+                Method registration = javaTime.getMethod("registerAll", XStream.class);
+                registration.invoke(null, this);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         registerConverter(new SelfStreamingInstanceChecker(converterLookup, this), PRIORITY_NORMAL);
