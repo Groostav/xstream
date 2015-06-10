@@ -35,7 +35,13 @@ public class JavaTimeConvertersTest extends AbstractAcceptanceTest {
         assertBothWays(Duration.parse("PT75H32M32.6S"), "<jtduration>PT75H32M32.6S</jtduration>");
         assertBothWays(Period.parse("P3Y11M2D"), "<period>P3Y11M2D</period>");
 
-        assertBothWays(DateTimeFormatter.ISO_DATE.parse("2015-06-03", HijrahDate::from),        "<hijrah-date>2015-06-03</hijrah-date>");
+        //note: http://stackoverflow.com/questions/27120984/get-month-name-of-java-time-chrono-hijrahdate-instance
+        //also note the default toString behaviour is to give us back things much more in line with the actual calendars
+        // http://islamicreliefcanada.org/islamic-hijri-calendar/?gclid=CjwKEAjwwN-rBRD-oMzT6aO_wGwSJABwEIkJY62EPWNC8SJ3oG1asiIMcit3oZiLtVlCe5_e8ZsrchoChXXw_wcB
+        //making this work by using a western value as a middle man is icky.
+        //Id like our own formatters using unicode characters. TODO.
+        HijrahDate hijrahDate = DateTimeFormatter.ISO_DATE.parse("2015-06-03", HijrahDate::from);
+        assertBothWays(hijrahDate,        "<hijrah-date>2015-06-03</hijrah-date>");
         assertBothWays(DateTimeFormatter.ISO_DATE.parse("2015-06-03", JapaneseDate::from),      "<japanese-date>2015-06-03</japanese-date>");
         assertBothWays(DateTimeFormatter.ISO_DATE.parse("2015-06-03", MinguoDate::from),        "<minguo-date>2015-06-03</minguo-date>");
         assertBothWays(DateTimeFormatter.ISO_DATE.parse("2015-06-03", ThaiBuddhistDate::from),  "<thai-date>2015-06-03</thai-date>");
